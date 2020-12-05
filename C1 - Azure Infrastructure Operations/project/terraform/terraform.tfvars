@@ -1,0 +1,2 @@
+prefix   = "azure"
+location = "southeastasia"
