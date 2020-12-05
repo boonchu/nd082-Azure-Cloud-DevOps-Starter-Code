@@ -21,17 +21,22 @@
     "managed_image_resource_group_name": "packer-rg",
     "managed_image_name": "Ubuntu_image_1804_lts",
 
+    "azure_tags": {
+      "role": "devops"
+    },
+
     "location": "Southeast Asia",
     "vm_size": "Standard_B1s"
   }],
   "provisioners": [{
-    "inline": [
-        "apt-get update",
-        "apt-get upgrade -y",
-        "echo 'Hello World!' > index.html",
-        "nohup busybox httpd -f -p 80 &" 
-    ],
+    "type": "shell",
     "inline_shebang": "/bin/sh -x",
-    "type": "shell"
+    "execute_command": "echo 'packer' | {{ .Vars }} sudo -E -S sh -e '{{ .Path }}'",
+    "inline": [
+      "apt-get update",
+      "apt-get upgrade -y",
+      "echo 'Hello World!' > index.html",
+      "nohup busybox httpd -f -p 80 &" 
+    ]
   }]
 }

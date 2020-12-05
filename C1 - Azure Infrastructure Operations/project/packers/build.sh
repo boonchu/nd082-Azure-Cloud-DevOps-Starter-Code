@@ -6,8 +6,8 @@ az account set --subscription="${SUBSCRIPTION_ID}"
 
 # Set APP_ID
 APP_ID="SP-Role-VM-Operator"
-# See pre-defined role
-# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor
+# See pre-defined role. Example: the script use 'owner'.
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner
 ROLE="Owner"
 
 # Test if APP_ID exists?

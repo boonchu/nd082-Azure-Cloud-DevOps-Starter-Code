@@ -12,6 +12,9 @@ resource "azurerm_virtual_network" "this" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
+  tags = {
+    role = var.role
+  }
 }
 
 resource "azurerm_subnet" "private" {
@@ -27,6 +30,9 @@ resource "azurerm_public_ip" "this" {
   resource_group_name = azurerm_resource_group.this.name
   allocation_method   = "Dynamic"
   domain_name_label   = "${var.prefix}-public-ip"
+  tags = {
+    role = var.role
+  }
 }
 
 resource "azurerm_network_interface" "this" {
@@ -40,42 +46,58 @@ resource "azurerm_network_interface" "this" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.this.id
   }
+
+  tags = {
+    role = var.role
+  }
 }
 
-resource "azurerm_linux_virtual_machine" "main" {
-  name                            = "${var.prefix}-vm-1"
-  resource_group_name             = azurerm_resource_group.this.name
-  location                        = azurerm_resource_group.this.location
-  size                            = "Standard_B1s"
+resource "azurerm_virtual_machine" "this" {
+  depends_on          = [azurerm_network_interface.this]
+
+  name                = "${var.prefix}-vm-1"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+  vm_size             = "Standard_B1s"
   network_interface_ids = [
     azurerm_network_interface.this.id,
   ]
 
+  delete_os_disk_on_termination    = true
+  delete_data_disks_on_termination = true
 
-  admin_username                  = "adminuser"
-  /*
-  admin_password                  = "P@ssw0rd1234!"
-  */
-  disable_password_authentication = true
-  admin_ssh_key {
-    username = "adminuser"
-    public_key = file("~/.ssh/id_rsa.pub")
+  os_profile {
+    computer_name  = "${var.prefix}-vm-1"
+    admin_username = "adminuser"
+    admin_password = "P@ssw0rd1234!"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = true
+    ssh_keys {
+      key_data = file("~/.ssh/id_rsa.pub")
+      path     = "/home/adminuser/.ssh/authorized_keys"
+    }
   }
 
   // https://gmusumeci.medium.com/how-to-find-azure-linux-vm-images-for-terraform-or-packer-deployments-24e8e0ac68a
-  /*
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
+  storage_image_reference  {
+    id        = lookup(var.linux-vm-image, "id", null)
+    offer     = lookup(var.linux-vm-image, "offer", null)
+    publisher = lookup(var.linux-vm-image, "publisher", null)
+    sku       = lookup(var.linux-vm-image, "sku", null)
+    version   = lookup(var.linux-vm-image, "version", null)
   }
-  */
-  // find id from packer build, az image list --resource-group packer-rg -o json | jq .'[]'.id
-  source_image_id = "/subscriptions/2fc77d44-a037-4e7b-822c-d51f8788b873/resourceGroups/packer-rg/providers/Microsoft.Compute/images/Ubuntu_image_1804_lts"
 
-  os_disk {
-    storage_account_type = "Standard_LRS"
-    caching              = "ReadWrite"
+  storage_os_disk {
+    name              = "${var.prefix}-vm-os-disk"
+    os_type           = "linux"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+
+  tags = {
+    role = var.role
   }
 }

@@ -5,3 +5,19 @@ variable "prefix" {
 variable "location" {
   description = "The Azure Region in which all resources in this example should be created."
 }
+
+variable "role" {
+  description = "role tag name"
+}
+
+variable "linux-vm-image" {
+  type        = map(string)
+  description = "Virtual machine source image information"
+  default = {
+    /*
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    */
+  }
+}
