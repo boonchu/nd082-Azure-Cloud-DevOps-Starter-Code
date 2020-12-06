@@ -70,31 +70,73 @@ resource "azurerm_subnet_network_security_group_association" "this" {
 
 
 resource "azurerm_public_ip" "this" {
-  count                = var.number-of-vms
-
-  name                = "${var.prefix}-public-ip${count.index}"
+  name                = "${var.prefix}-public-ip"
   location            = var.location
   resource_group_name = azurerm_resource_group.this.name
-  allocation_method   = "Dynamic"
-  domain_name_label   = "${var.prefix}-public-ip${count.index}"
+  allocation_method   = "Static" 
+  domain_name_label   = "${var.prefix}-public-ip"
   tags = {
     role = var.role
   }
 }
 
 
-resource "azurerm_network_interface" "this" {
-  count                     = var.number-of-vms
+resource "azurerm_lb" "this" {
+  name                = "${var.prefix}-public-lb"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.this.name
 
-  name                      = "${var.prefix}-vif${count.index}"
-  resource_group_name       = azurerm_resource_group.this.name
-  location                  = azurerm_resource_group.this.location
+  frontend_ip_configuration {
+    name                 = "${var.prefix}-public-lb"
+    public_ip_address_id = azurerm_public_ip.this.id
+  }
+
+  tags = {
+    role = var.role
+  }
+}
+
+
+resource "azurerm_lb_backend_address_pool" "this" {
+  resource_group_name = azurerm_resource_group.this.name
+  loadbalancer_id     = azurerm_lb.this.id
+  name                = "${var.prefix}-members-pool"
+}
+
+
+resource "azurerm_lb_probe" "this" {
+  resource_group_name = azurerm_resource_group.this.name
+  loadbalancer_id     = azurerm_lb.this.id
+  name                = "http-lb-health-probe"
+  port                = 80
+}
+
+
+resource "azurerm_lb_rule" "this" {
+  resource_group_name            = azurerm_resource_group.this.name
+  loadbalancer_id                = azurerm_lb.this.id
+  name                           = "http-lb-healthcheck-rule"
+  protocol                       = "Tcp"
+  frontend_port                  = 80
+  backend_port                   = 80
+  frontend_ip_configuration_name = "${var.prefix}-public-lb"
+  backend_address_pool_id        = azurerm_lb_backend_address_pool.this.id
+  probe_id                       = azurerm_lb_probe.this.id
+  idle_timeout_in_minutes        = 30
+}
+
+
+resource "azurerm_network_interface" "this" {
+  count               = var.number-of-vms
+
+  name                = "${var.prefix}-vif${count.index}"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
 
   ip_configuration {
     name                          = "${var.prefix}-vif${count.index}"
     subnet_id                     = azurerm_subnet.private.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.this.*.id[count.index]
   }
 
   tags = {
@@ -103,15 +145,26 @@ resource "azurerm_network_interface" "this" {
 }
 
 
-resource "azurerm_managed_disk" "this" {
-  count                = var.number-of-vms
+resource "azurerm_network_interface_backend_address_pool_association" "this" {
+  count                   = var.number-of-vms
 
-  name                 = "${var.prefix}-data-vmdisk${count.index}"
-  location             = azurerm_resource_group.this.location
-  resource_group_name  = azurerm_resource_group.this.name
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = "10"
+  network_interface_id    = element(azurerm_network_interface.this.*.id, count.index)
+  ip_configuration_name   = "${var.prefix}-vif${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.this.id
+}
+
+
+resource "azurerm_availability_set" "this" {
+  name                = "${var.prefix}-availabilityset"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.this.name
+
+  /* 
+    The number of Update Domains varies depending on which Azure Region. See documents.
+    https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/availability_set
+    https://github.com/MicrosoftDocs/azure-docs/blob/master/includes/managed-disks-common-fault-domain-region-list.md
+  */
+  platform_fault_domain_count = 2
 
   tags = {
     role = var.role
@@ -122,7 +175,7 @@ resource "azurerm_managed_disk" "this" {
 resource "azurerm_virtual_machine" "this" {
   count               = var.number-of-vms
 
-  depends_on          = [azurerm_network_interface.this]
+  depends_on          = [azurerm_network_interface.this, azurerm_availability_set.this]
 
   name                = "${var.prefix}-vm${count.index}"
   resource_group_name = azurerm_resource_group.this.name
@@ -131,6 +184,7 @@ resource "azurerm_virtual_machine" "this" {
   network_interface_ids = [
     element(azurerm_network_interface.this.*.id, count.index)
   ]
+  availability_set_id = azurerm_availability_set.this.id
 
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
@@ -165,6 +219,22 @@ resource "azurerm_virtual_machine" "this" {
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
+
+  tags = {
+    role = var.role
+  }
+}
+
+
+resource "azurerm_managed_disk" "this" {
+  count                = var.number-of-vms
+
+  name                 = "${var.prefix}-data-vmdisk${count.index}"
+  location             = azurerm_resource_group.this.location
+  resource_group_name  = azurerm_resource_group.this.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "10"
 
   tags = {
     role = var.role
