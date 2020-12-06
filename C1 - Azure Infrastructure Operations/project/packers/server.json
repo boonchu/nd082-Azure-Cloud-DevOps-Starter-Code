@@ -31,12 +31,16 @@
   "provisioners": [{
     "type": "shell",
     "inline_shebang": "/bin/sh -x",
-    "execute_command": "echo 'packer' | {{ .Vars }} sudo -E -S sh -e '{{ .Path }}'",
+    "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
     "inline": [
       "apt-get update",
       "apt-get upgrade -y",
-      "echo 'Hello World!' > index.html",
-      "nohup busybox httpd -f -p 80 &" 
+      "mkdir '/var/www'",
+      "echo 'Hello World!' > '/var/www/index.html'",
+      "rm -f /etc/rc.local",
+      "printf '%s\n%s\n%s' '#!/bin/sh -e' 'nohup busybox httpd -vfp 80 -h /var/www &' 'exit 0' | sudo tee -a /etc/rc.local",
+      "chmod +x /etc/rc.local",
+      "systemctl daemon-reload && systemctl restart rc-local"
     ]
   }]
 }
