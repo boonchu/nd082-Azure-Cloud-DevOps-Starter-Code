@@ -1,6 +1,6 @@
-#### Example: Inherit a tag from the resource group if missing
+#### Deny when miss to inherit a tag in the resources.
 
-  * To create a custom policy using the azure portal
+  * When you are not familar how to put policy in place programmatically, please uses 'Azure Portal' to create a custom policy.
 
 ```
 - In azure portal, search for Policy and open it.
@@ -16,7 +16,17 @@
 - After you have assigned the policy, you can confirm this through the CLI by running the command to check assigned policies.
 ```
   
-  * Use script to install policy
+  * When choose to automate the policy deployment, use script to install policy.
+
+```
+- Two files were prepared in repository. 
+  * tagging-policy.rules.json
+  * tagging-policy.parameters.json 
+- Push deployment with subscription scope.
+- Afer change, policy deny any newly resource creation/requests tag if name paramter 'role' is not implemented in resource.
+```
+
+  * Deploy policy with script.
 
 ```
 ./install.sh
