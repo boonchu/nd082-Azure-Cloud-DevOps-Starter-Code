@@ -2,10 +2,12 @@ provider "azurerm" {
   features {}
 }
 
+
 resource "azurerm_resource_group" "this" {
   name     = "${var.prefix}-resources"
   location = var.location
 }
+
 
 resource "azurerm_virtual_network" "this" {
   name                = "${var.prefix}-network"
@@ -17,6 +19,7 @@ resource "azurerm_virtual_network" "this" {
   }
 }
 
+
 resource "azurerm_subnet" "private" {
   name                 = "private_subnet"
   resource_group_name  = azurerm_resource_group.this.name
@@ -24,27 +27,74 @@ resource "azurerm_subnet" "private" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
+
+resource "azurerm_network_security_group" "this" {
+  name                = "${var.prefix}-sg"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.this.name
+
+  security_rule {
+    name                       = "HTTP"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "SSH"
+    priority                   = 101
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  tags = {
+    role = var.role
+  }
+}
+
+
+resource "azurerm_subnet_network_security_group_association" "this" {
+  subnet_id                 = azurerm_subnet.private.id
+  network_security_group_id = azurerm_network_security_group.this.id
+}
+
+
 resource "azurerm_public_ip" "this" {
-  name                = "${var.prefix}-public-ip-1"
+  count                = var.number-of-vms
+
+  name                = "${var.prefix}-public-ip${count.index}"
   location            = var.location
   resource_group_name = azurerm_resource_group.this.name
   allocation_method   = "Dynamic"
-  domain_name_label   = "${var.prefix}-public-ip"
+  domain_name_label   = "${var.prefix}-public-ip${count.index}"
   tags = {
     role = var.role
   }
 }
+
 
 resource "azurerm_network_interface" "this" {
-  name                = "${var.prefix}-nic-1"
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
+  count                     = var.number-of-vms
+
+  name                      = "${var.prefix}-vif${count.index}"
+  resource_group_name       = azurerm_resource_group.this.name
+  location                  = azurerm_resource_group.this.location
 
   ip_configuration {
-    name                          = "internal"
+    name                          = "${var.prefix}-vif${count.index}"
     subnet_id                     = azurerm_subnet.private.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.this.id
+    public_ip_address_id          = azurerm_public_ip.this.*.id[count.index]
   }
 
   tags = {
@@ -52,22 +102,41 @@ resource "azurerm_network_interface" "this" {
   }
 }
 
+
+resource "azurerm_managed_disk" "this" {
+  count                = var.number-of-vms
+
+  name                 = "${var.prefix}-data-vmdisk${count.index}"
+  location             = azurerm_resource_group.this.location
+  resource_group_name  = azurerm_resource_group.this.name
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "10"
+
+  tags = {
+    role = var.role
+  }
+}
+
+
 resource "azurerm_virtual_machine" "this" {
+  count               = var.number-of-vms
+
   depends_on          = [azurerm_network_interface.this]
 
-  name                = "${var.prefix}-vm-1"
+  name                = "${var.prefix}-vm${count.index}"
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
   vm_size             = "Standard_B1s"
   network_interface_ids = [
-    azurerm_network_interface.this.id,
+    element(azurerm_network_interface.this.*.id, count.index)
   ]
 
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
 
   os_profile {
-    computer_name  = "${var.prefix}-vm-1"
+    computer_name  = "${var.prefix}-vm${count.index}"
     admin_username = "adminuser"
     admin_password = "P@ssw0rd1234!"
   }
@@ -90,7 +159,7 @@ resource "azurerm_virtual_machine" "this" {
   }
 
   storage_os_disk {
-    name              = "${var.prefix}-vm-os-disk"
+    name              = "${var.prefix}-vmbootdisk${count.index}"
     os_type           = "linux"
     caching           = "ReadWrite"
     create_option     = "FromImage"
@@ -100,4 +169,14 @@ resource "azurerm_virtual_machine" "this" {
   tags = {
     role = var.role
   }
+}
+
+
+resource "azurerm_virtual_machine_data_disk_attachment" "this" {
+  count	             = var.number-of-vms
+  managed_disk_id    = azurerm_managed_disk.this.*.id[count.index]
+
+  virtual_machine_id = element(azurerm_virtual_machine.this.*.id, count.index)
+  lun                = "10"
+  caching            = "ReadWrite"
 }
