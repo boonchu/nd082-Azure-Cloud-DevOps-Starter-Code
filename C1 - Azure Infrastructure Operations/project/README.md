@@ -17,8 +17,27 @@ For this project, you will write a Packer template and a Terraform template to d
 4. Install [Terraform](https://www.terraform.io/downloads.html)
 
 ### Instructions
-**Your words here**
+1. Verify all tooling versions. Upon the test, I use the versions that run on MacOS. When you have unexpected results from project clone, that could be introduction of related issues from tool versions.
+
+```
+* az --version
+azure-cli                         2.15.1
+
+* terraform - version
+Terraform v0.12.29
+
+* packer version
+Packer v1.6.5
+```
+
+2. Note to follow each step in order to get a well-planned result.
+
+3. Deploying Your Infrastructure.
+
+   3.1 Open subfolder 'custom-policies' and run install.sh. Consult README.md in subfolder to get a clean start.
+   3.2 Open subfolder 'packer' and run build.sh. Consult README.md in subfolder to get a clean start.
+   3.3 Open subfolder 'terraform' and run install.sh. Consult README.md in subfolder to get a clean start.
 
 ### Output
-**Your words here**
 
+1. Use README.md in the subfolder in each step to acknowledge what outputs look like after run.
