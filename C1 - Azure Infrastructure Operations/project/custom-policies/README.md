@@ -23,7 +23,7 @@
   * tagging-policy.rules.json
   * tagging-policy.parameters.json 
 - Push deployment with subscription scope.
-- Afer change, policy deny any newly resource creation/requests tag if name paramter 'role' is not implemented in resource.
+- Afer change, policy deny any newly resource creation/requests tag if tag name 'role' is not implemented in resource.
 ```
 
   * Deploy policy with script.
@@ -37,6 +37,8 @@
 ```
 az policy assignment list -o table
 ```
+
+  * See output 'az policy assignment list' from file 'tagging-policy.png'.
 
   * References
 
