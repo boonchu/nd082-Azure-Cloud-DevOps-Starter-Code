@@ -34,9 +34,11 @@ Packer v1.6.5
 
 3. Deploying Your Infrastructure.
 
-   3.1 Open subfolder 'custom-policies' and run install.sh. Consult README.md in subfolder to get a clean start.
-   3.2 Open subfolder 'packer' and run build.sh. Consult README.md in subfolder to get a clean start.
-   3.3 Open subfolder 'terraform' and run install.sh. Consult README.md in subfolder to get a clean start.
+   - Open subfolder 'custom-policies' and run install.sh. Consult README.md in subfolder to get a clean start.
+
+   - Open subfolder 'packer' and run build.sh. Consult README.md in subfolder to get a clean start.
+
+   - Open subfolder 'terraform' and run install.sh. Consult README.md in subfolder to get a clean start.
 
 ### Output
 
