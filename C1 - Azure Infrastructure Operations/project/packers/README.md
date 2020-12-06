@@ -11,6 +11,8 @@
 ./build.sh
 ```
 
+#### Outputs
+
   - After build succeeded, follows with cli to get image Id. This Id value will be useful in next part of terraform run.
 
 ```
