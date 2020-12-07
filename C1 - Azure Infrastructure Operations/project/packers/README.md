@@ -1,6 +1,11 @@
 #### How to build VM image with packer
 
   - Create 'packer-rg' resource group from Azure Portal.
+
+```
+az group create --location southeastasia --name packer-rg
+```
+
   - Use 'build.sh' to start with new image build with packer. What does the script do?
 
     * Create Application service principal from Azure AD that produce attributes client_id, client_secret, tenant_id, appId, etc.
