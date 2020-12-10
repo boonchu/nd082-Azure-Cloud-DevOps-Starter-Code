@@ -13,6 +13,9 @@ az group create --location southeastasia --name packer-rg
     * Pass necessary SP parameters to packer prior to a build process.
 
 ```
+# Require to assign 'Role' and 'Service Principal'.
+# What is role + SP? https://www.youtube.com/watch?v=4v7ffXxOnwU
+
 ./build.sh
 ```
 
