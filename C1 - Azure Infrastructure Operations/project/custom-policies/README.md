@@ -28,6 +28,9 @@
 
   * Deploy policy with script.
 
+    - [Azure policy](https://www.youtube.com/watch?v=9WO4EBgUJXk&t=224s)
+    - [Azure Resource Tags](https://www.youtube.com/watch?v=J40eJR4qQ0w)
+
 ```
 ./install.sh
 ```

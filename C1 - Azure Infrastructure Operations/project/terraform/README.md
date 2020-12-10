@@ -1,3 +1,11 @@
+#### Azure infrastructure terminology
+
+  - [Azure Virtual Machine](https://www.youtube.com/watch?v=inaXkN2UrFE)
+  - [Azure Resource Group](https://www.youtube.com/watch?v=gIhf-S7BCdo)
+  - [Azure Regions and Availability Zone](https://www.youtube.com/watch?v=C-nNw1mGwzE)
+  - [Azure Virtual Network](https://www.youtube.com/watch?v=5NMcM4zJPM4)
+  - [Azure Network Security Group](https://www.youtube.com/watch?v=w8H5fWBHddA)
+
 #### Use terraform to create the infrastructure.
 
 - Change 'terraform.tfvars' parameters to meet your requirements.
