@@ -1,5 +1,7 @@
 #### Deny when miss to inherit a tag in the resources.
 
+  * [Tag Management with Azure Policy](https://cloudscaping.co.uk/2020/06/23/azure-policy-tag-governance/)
+
   * When you are not familar how to put policy in place programmatically, please uses 'Azure Portal' to create a custom policy.
 
 ```
